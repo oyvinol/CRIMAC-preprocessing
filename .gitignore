@@ -1,0 +1,5 @@
+*.zarr
+*.raw
+*.idx
+/in
+/out
