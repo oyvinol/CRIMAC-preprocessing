@@ -136,6 +136,10 @@ class SimradUnknownParser(_SimradDatagramParser):
         headers = {0: [('type', '4s'),
                        ('low_date', 'L'),
                        ('high_date', 'L')
+                      ],
+                    1: [('type', '4s'),
+                       ('low_date', 'L'),
+                       ('high_date', 'L')
                       ]
                   }
         _SimradDatagramParser.__init__(self, dg_type, headers)
@@ -203,6 +207,11 @@ class SimradDepthParser(_SimradDatagramParser):
     '''
     def __init__(self):
         headers = {0: [('type', '4s'),
+                       ('low_date', 'L'),
+                       ('high_date', 'L'),
+                       ('transceiver_count', 'L')
+                      ],
+                    1: [('type', '4s'),
                        ('low_date', 'L'),
                        ('high_date', 'L'),
                        ('transceiver_count', 'L')
@@ -304,6 +313,11 @@ class SimradBottomParser(_SimradDatagramParser):
                      ('low_date', 'L'),
                      ('high_date', 'L'),
                      ('transceiver_count', 'L')
+                     ],
+                     1: [('type', '4s'),
+                     ('low_date', 'L'),
+                     ('high_date', 'L'),
+                     ('transceiver_count', 'L')
                      ]
                 }
         _SimradDatagramParser.__init__(self, "BOT", headers)
@@ -380,6 +394,10 @@ class SimradAnnotationParser(_SimradDatagramParser):
 
     def __init__(self):
         headers = {0: [('type', '4s'),
+                     ('low_date', 'L'),
+                     ('high_date', 'L')
+                     ],
+                     1: [('type', '4s'),
                      ('low_date', 'L'),
                      ('high_date', 'L')
                      ]
@@ -469,6 +487,10 @@ class SimradNMEAParser(_SimradDatagramParser):
 
     def __init__(self):
         headers = {0: [('type', '4s'),
+                             ('low_date', 'L'),
+                             ('high_date', 'L')
+                            ],
+                    1: [('type', '4s'),
                              ('low_date', 'L'),
                              ('high_date', 'L')
                             ]
@@ -658,6 +680,16 @@ class SimradIDXParser(_SimradDatagramParser):
 
     def __init__(self):
         headers = {0: [('type', '4s'),
+                       ('low_date', 'L'),
+                       ('high_date', 'L'),
+                       #('dummy', 'L'),   # There are 4 extra bytes in this datagram
+                       ('ping_number', 'L'),
+                       ('distance', 'd'),
+                       ('latitude', 'd'),
+                       ('longitude', 'd'),
+                       ('file_offset', 'L'),
+                      ],
+                      1: [('type', '4s'),
                        ('low_date', 'L'),
                        ('high_date', 'L'),
                        #('dummy', 'L'),   # There are 4 extra bytes in this datagram
@@ -859,7 +891,11 @@ class SimradXMLParser(_SimradDatagramParser):
         headers = {0: [('type', '4s'),
                         ('low_date', 'L'),
                         ('high_date', 'L')
-                            ]
+                            ],
+                    1: [('type', '4s'),
+                        ('low_date', 'L'),
+                        ('high_date', 'L')
+                        ]
                         }
 
         _SimradDatagramParser.__init__(self, "XML", headers)
