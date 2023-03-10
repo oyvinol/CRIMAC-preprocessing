@@ -3,3 +3,6 @@
 *.idx
 /in
 /out
+
+**/__pycache__/**
+.venv/**

@@ -1,7 +1,0 @@
-name: pyEcholab
-channels:
-  - conda-forge
-dependencies:
-  - python
-  - pip:
-    - -r requirements.txt
