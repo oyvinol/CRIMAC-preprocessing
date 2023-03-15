@@ -28,11 +28,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # Set a the version here
 __version__ = 0.2
 
-# To get echolab2 do this
-# $export PYTHONPATH=$PYTHONPATH:/path/to/pyEcholab
-# OR
-# import sys 
-# sys.path.append("/path/to/pyEcholab")
 
 from curses import raw
 from echolab2.instruments import EK80, EK60
@@ -620,7 +615,8 @@ def process_raw_file(raw_fname, main_frequency, reference_range = None):
     # Handles condition where we have missing time in position data
     if len(positions['ping_time']) != len(da_sv.ping_time.data):
         diff = np.setdiff1d(da_sv.ping_time.data, positions['ping_time'])
-        da_pos = da_pos.reindex({"ping_time": da_sv.ping_time.data})
+        # da_pos = da_pos.reindex({"ping_time": da_sv.ping_time.data})
+        da_pos = da_pos.reindex({"ping_time": da_sv.ping_time.data},  method='nearest') # Insert nearest value instead of NAN
 
     # Crate a dataset
     ds = xr.Dataset(
