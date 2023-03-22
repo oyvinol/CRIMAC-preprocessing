@@ -615,8 +615,8 @@ def process_raw_file(raw_fname, main_frequency, reference_range = None):
     # Handles condition where we have missing time in position data
     if len(positions['ping_time']) != len(da_sv.ping_time.data):
         diff = np.setdiff1d(da_sv.ping_time.data, positions['ping_time'])
-        # da_pos = da_pos.reindex({"ping_time": da_sv.ping_time.data})
-        da_pos = da_pos.reindex({"ping_time": da_sv.ping_time.data},  method='nearest') # Insert nearest value instead of NAN
+        da_pos = da_pos.reindex({"ping_time": da_sv.ping_time.data})
+        #da_pos = da_pos.reindex({"ping_time": da_sv.ping_time.data}, method='nearest')
 
     # Crate a dataset
     ds = xr.Dataset(
@@ -1027,8 +1027,13 @@ def rechunk_output(output, output_dir):
 
 if __name__ == '__main__':
 
-    # Default input raw dir
-    raw_dir = os.path.expanduser("/datain")
+    # import sys
+    print(sys.argv[1:])
+    raw_dir = sys.argv[1]
+
+    if raw_dir is None:
+        # Default input raw dir
+        raw_dir = os.path.expanduser("/datain")
 
     # Check if input is empty
     if(len(os.listdir(raw_dir)) == 0):
@@ -1045,7 +1050,9 @@ if __name__ == '__main__':
     
     
     # Get the output name
-    out_name = os.path.expanduser("/dataout") + '/' + os.getenv('OUTPUT_NAME', 'out')
+    # out_name = os.path.expanduser("/dataout") + '/' + os.getenv('OUTPUT_NAME', 'out')
+    out_name = os.getenv('OUTPUT_NAME', 'out')
+    print("out_name = ", out_name)
 
     # Get the range determination type (numeric, 'auto', or None)
     # A numeric type will force the range steps to be equal to the specified number
