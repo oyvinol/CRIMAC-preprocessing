@@ -63,6 +63,10 @@ from matplotlib.colors import LinearSegmentedColormap, Colormap
 import math
 from numcodecs import Blosc
 
+import argparse
+import platform
+import fileWatcher
+
 def append_to_parquet(df, pq_filepath, pq_obj=None):
     # Must set the schema to avoid mismatched schema errors
     fields = [
@@ -1025,34 +1029,26 @@ def rechunk_output(output, output_dir):
     shutil.rmtree(tmp_file)
     [shutil.rmtree(fil) for fil in glob.glob(output + "_*.zarr")]
 
-if __name__ == '__main__':
-
+# if __name__ == '__main__':
+def callbackForPreprocessing(fileDiff: list, ouptuDir):
     # import sys
-    print(sys.argv[1:])
-    raw_dir = sys.argv[1]
+    # print(sys.argv[1:])
+    # raw_dir = sys.argv[1]
+    raw_dir = os.path.dirname(fileDiff[0])
 
     if raw_dir is None:
         # Default input raw dir
         raw_dir = os.path.expanduser("/datain")
 
-    # Check if input is empty
-    if(len(os.listdir(raw_dir)) == 0):
-        print("Input directory for .raw files is empty.")
-        
+    # # Check if input is empty
+    # if(len(os.listdir(raw_dir)) == 0):
+    #     print("Input directory for .raw files is empty.")
+
     # Default input work dir
     work_dir = os.path.expanduser("/workin")
 
     # Get the output type
     out_type = os.getenv('OUTPUT_TYPE', 'zarr')
-    
-    # raw_file for processing single files
-    raw_file = os.getenv('RAW_FILE', 'nofile')
-    
-    
-    # Get the output name
-    # out_name = os.path.expanduser("/dataout") + '/' + os.getenv('OUTPUT_NAME', 'out')
-    out_name = os.getenv('OUTPUT_NAME', 'out')
-    print("out_name = ", out_name)
 
     # Get the range determination type (numeric, 'auto', or None)
     # A numeric type will force the range steps to be equal to the specified number
@@ -1082,7 +1078,7 @@ if __name__ == '__main__':
     if do_plot == '1':
         do_plot = True
     else:
-        do_plot = False
+        do_plot = False        
 
     # If number of workers is specified
     #n_workers = int(os.getenv('N_WORKERS', '2'))
@@ -1095,53 +1091,108 @@ if __name__ == '__main__':
 
     # Setting up dask
     tmp_dir = os.path.expanduser('/dataout/tmp')
-    
-    # Do process
-    status = raw_to_grid_multiple(raw_dir,
-                            work_dir_loc = work_dir,
-                            single_raw_file = raw_file,
-                            main_frequency = main_freq,
-                            write_output = True,
-                            out_fname = out_name,
-                            output_type = out_type,
-                            overwrite = False,
-                            resume = True,
-                            max_reference_range = max_ref_ran)
 
-    # Cleaning up Dask
-    #client.close()
-    if os.path.exists(tmp_dir):
-        shutil.rmtree(tmp_dir)
+    for newFile in fileDiff:
+        if not newFile.endswith('.raw'):
+            print(f"Skipping unhandles file format: {newFile}")
+            continue
 
-    # Do post-processing #
+        # raw_file for processing single files
+        # raw_file = os.getenv('RAW_FILE', 'nofile')
+        raw_file = os.path.basename(newFile)
+        
+        # Get the output name
+        # out_name = os.path.expanduser("/dataout") + '/' + os.getenv('OUTPUT_NAME', 'out')
+        out_name = os.path.join(ouptuDir, os.getenv('OUTPUT_NAME', raw_file))
+        # out_name = os.getenv('OUTPUT_NAME', 'out')
+        print("Now creating = ", out_name)
 
-    # Post processing: rechunk Zarr files
-    if status is True and out_type == "zarr":
-        rechunk_output(out_name, os.path.expanduser("./dataout"))
+        # Do process
+        status = raw_to_grid_multiple(raw_dir,
+                                work_dir_loc = work_dir,
+                                single_raw_file = raw_file,
+                                main_frequency = main_freq,
+                                write_output = True,
+                                out_fname = out_name,
+                                output_type = out_type,
+                                overwrite = False,
+                                resume = True,
+                                max_reference_range = max_ref_ran)
 
-    # Post-processing: appending a unique ID and pyecholab rev
-    if status is True:
-        if out_type == "netcdf4":
-            ds = xr.open_dataset(out_name + ".nc")
-            ds_id =  ds
-            ds.close()
-            with netCDF4.Dataset(out_name + ".nc", mode='a') as nc:
-                nc.id = ds_id
-        else:
-            ds = xr.open_zarr(out_name + ".zarr",consolidated=False)
-            #ds_id = dask.base.tokenize(ds)
-            ds_id = ds  
-            ds.close()
-            zro = zr.open(out_name + ".zarr")
-            zro_attrs = zro.attrs.asdict()
-            print(zro_attrs)
-            #fix lines below after dask renoval
-            #zro_attrs["id"] = ds_id
-            #zro.attrs.put(zro_attrs)
+        # Cleaning up Dask
+        #client.close()
+        if os.path.exists(tmp_dir):
+            shutil.rmtree(tmp_dir)
 
-    if status == True and do_plot == True:
-        if out_type == "netcdf4":
-            ds = xr.open_dataset(out_name + ".nc",consolidated=False)
-        else:
-            ds = xr.open_zarr(out_name + ".zarr", chunks={'ping_time':'auto'},consolidated=False)
-        plot_all(ds, out_name)
+        # Do post-processing #
+
+        # Post processing: rechunk Zarr files
+        if status is True and out_type == "zarr":
+            rechunk_output(out_name, os.path.expanduser("./dataout"))
+
+        # Post-processing: appending a unique ID and pyecholab rev
+        if status is True:
+            if out_type == "netcdf4":
+                ds = xr.open_dataset(out_name + ".nc")
+                ds_id =  ds
+                ds.close()
+                with netCDF4.Dataset(out_name + ".nc", mode='a') as nc:
+                    nc.id = ds_id
+            else:
+                ds = xr.open_zarr(out_name + ".zarr",consolidated=False)
+                #ds_id = dask.base.tokenize(ds)
+                ds_id = ds  
+                ds.close()
+                zro = zr.open(out_name + ".zarr")
+                zro_attrs = zro.attrs.asdict()
+                print(zro_attrs)
+                #fix lines below after dask renoval
+                #zro_attrs["id"] = ds_id
+                #zro.attrs.put(zro_attrs)
+
+        if status == True and do_plot == True:
+            if out_type == "netcdf4":
+                ds = xr.open_dataset(out_name + ".nc",consolidated=False)
+            else:
+                ds = xr.open_zarr(out_name + ".zarr", chunks={'ping_time':'auto'},consolidated=False)
+            plot_all(ds, out_name)
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog='CRIMAC_preprocess.py',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='Extract meta data to geojson',
+        description='CRIMAC_preprocess.py -i <input directory> -o <output dir>')
+
+    inputDir = os.environ.get('FILE_READ_FOLDER', "/input")
+    outputDir = os.environ.get('FILE_STORE_FOLDER', "/output")
+
+    parser.add_argument("-s", type=str, default="meta.sqlite", help='use sqlite dbfile to use')
+    if platform.system() == "Windows":
+        parser.add_argument("-i", type=str, default="C:\\Stuff\\metaExtractor\\input", help='input directory')
+        parser.add_argument("-o", type=str, default="C:\\Stuff\\metaExtractor\\output", help='output directory')
+    else :
+        parser.add_argument("-i", type=str, default=inputDir, help='input directory')
+        parser.add_argument("-o", type=str, default=outputDir, help='output directory')
+
+    args = parser.parse_args()
+
+    inputDirectory = args.i
+    outputDir = args.o
+
+    if not os.path.isdir(inputDirectory):
+        print(f"Input directory {inputDirectory} not found")
+        exit(2)
+    else :
+        print(f"Reading input from : {inputDirectory}")
+        
+    print(f"Will output to : {outputDir}")
+
+
+    fileWatcher.fileWatcher(inputDirectory, outputDir, callbackForPreprocessing)
+
+
+
+if __name__ == "__main__":
+    print("Starting CRIMAC_preprocess")
+    main()        

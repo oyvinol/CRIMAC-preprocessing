@@ -1,17 +1,11 @@
-FROM python:3.8 as builder
+FROM python:3.10-slim-bullseye
 
-RUN mkdir /install
-WORKDIR /install
-
-COPY requirements.txt /requirements.txt
-
-RUN pip install -r /requirements.txt
-
-COPY pyEcholab/ /pyecholab/
-RUN pip install -e /pyecholab
-
-COPY *.py /app/
+RUN apt-get update -y 
+RUN apt-get install -y git
 
 WORKDIR /app
+COPY *.py /app/
+COPY requirements.txt /app
+RUN pip install -r requirements.txt
 
-CMD ["python3", "/app/CRIMAC_preprocess.py"]
+CMD ["python", "CRIMAC_preprocess.py"]
