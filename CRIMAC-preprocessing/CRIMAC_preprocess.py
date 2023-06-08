@@ -67,6 +67,9 @@ import argparse
 import platform
 import fileWatcher
 
+import debugpy
+debugpy.listen(("0.0.0.0", 5678))
+
 def append_to_parquet(df, pq_filepath, pq_obj=None):
     # Must set the schema to avoid mismatched schema errors
     fields = [
@@ -1188,6 +1191,8 @@ def main():
         
     print(f"Will output to : {outputDir}")
 
+    # print("Waiting for client to attach...")
+    # debugpy.wait_for_client()
 
     fileWatcher.fileWatcher(inputDirectory, outputDir, callbackForPreprocessing)
 
